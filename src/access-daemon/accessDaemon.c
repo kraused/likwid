@@ -974,7 +974,9 @@ daemonize(int* parentPid)
 {
     pid_t pid, sid;
 
-    *parentPid = getpid();
+    if (parentPid) {
+       *parentPid = getpid();
+    }
 
     /* already a daemon */
     if ( getppid() == 1 ) return;
@@ -1346,6 +1348,8 @@ int main(void)
 #if 0
     daemonize(&pid);
     syslog(LOG_INFO, "AccessDaemon runs with UID %d, eUID %d\n", getuid(), geteuid());
+#else
+    daemonize(NULL);
 #endif
 
     pid = getpid();
