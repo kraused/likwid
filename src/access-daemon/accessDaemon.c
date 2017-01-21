@@ -49,6 +49,12 @@
 #include <sys/fsuid.h>
 #include <getopt.h>
 
+#include <signal.h>
+#include <sys/signalfd.h>
+#include <poll.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+
 #include <types.h>
 #include <registers.h>
 #include <perfmon_haswellEP_counters.h>
@@ -490,116 +496,116 @@ static int allowed_pci_knl(PciDeviceType type, uint32_t reg)
 {
     switch(type)
     {
-	case EDC:
-	    if ((reg == PCI_MIC2_EDC_U_CTR0_A) ||
-		(reg == PCI_MIC2_EDC_U_CTR0_B) ||
-	        (reg == PCI_MIC2_EDC_U_CTR1_A) ||
-		(reg == PCI_MIC2_EDC_U_CTR1_B) ||
-	        (reg == PCI_MIC2_EDC_U_CTR2_A) ||
-		(reg == PCI_MIC2_EDC_U_CTR2_B) ||
-	        (reg == PCI_MIC2_EDC_U_CTR3_A) ||
-		(reg == PCI_MIC2_EDC_U_CTR3_B) ||
-		(reg == PCI_MIC2_EDC_U_CTRL0) ||
-		(reg == PCI_MIC2_EDC_U_CTRL1) ||
-		(reg == PCI_MIC2_EDC_U_CTRL2) ||
-		(reg == PCI_MIC2_EDC_U_CTRL3) ||
-		(reg == PCI_MIC2_EDC_U_BOX_CTRL) ||
-		(reg == PCI_MIC2_EDC_U_BOX_STATUS) ||
-		(reg == PCI_MIC2_EDC_U_FIXED_CTR_A) ||
-		(reg == PCI_MIC2_EDC_U_FIXED_CTR_B) ||
-		(reg == PCI_MIC2_EDC_U_FIXED_CTRL) ||
-	        (reg == PCI_MIC2_EDC_D_CTR0_A) ||
-		(reg == PCI_MIC2_EDC_D_CTR0_B) ||
-	        (reg == PCI_MIC2_EDC_D_CTR1_A) ||
-		(reg == PCI_MIC2_EDC_D_CTR1_B) ||
-	        (reg == PCI_MIC2_EDC_D_CTR2_A) ||
-		(reg == PCI_MIC2_EDC_D_CTR2_B) ||
-	        (reg == PCI_MIC2_EDC_D_CTR3_A) ||
-		(reg == PCI_MIC2_EDC_D_CTR3_B) ||
-		(reg == PCI_MIC2_EDC_D_CTRL0) ||
-		(reg == PCI_MIC2_EDC_D_CTRL1) ||
-		(reg == PCI_MIC2_EDC_D_CTRL2) ||
-		(reg == PCI_MIC2_EDC_D_CTRL3) ||
-		(reg == PCI_MIC2_EDC_D_BOX_CTRL) ||
-		(reg == PCI_MIC2_EDC_D_BOX_STATUS) ||
-		(reg == PCI_MIC2_EDC_D_FIXED_CTR_A) ||
-		(reg == PCI_MIC2_EDC_D_FIXED_CTR_B) ||
-		(reg == PCI_MIC2_EDC_D_FIXED_CTRL))
-	    {
-		return 1;
-	    }
-	    break;
-	case IMC:
-	    if ((reg == PCI_MIC2_MC_U_CTR0_A) ||
-		(reg == PCI_MIC2_MC_U_CTR0_B) ||
-	        (reg == PCI_MIC2_MC_U_CTR1_A) ||
-		(reg == PCI_MIC2_MC_U_CTR1_B) ||
-	        (reg == PCI_MIC2_MC_U_CTR2_A) ||
-		(reg == PCI_MIC2_MC_U_CTR2_B) ||
-	        (reg == PCI_MIC2_MC_U_CTR3_A) ||
-		(reg == PCI_MIC2_MC_U_CTR3_B) ||
-		(reg == PCI_MIC2_MC_U_CTRL0) ||
-		(reg == PCI_MIC2_MC_U_CTRL1) ||
-		(reg == PCI_MIC2_MC_U_CTRL2) ||
-		(reg == PCI_MIC2_MC_U_CTRL3) ||
-		(reg == PCI_MIC2_MC_U_BOX_CTRL) ||
-		(reg == PCI_MIC2_MC_U_BOX_STATUS) ||
-		(reg == PCI_MIC2_MC_U_FIXED_CTR_A) ||
-		(reg == PCI_MIC2_MC_U_FIXED_CTR_B) ||
-		(reg == PCI_MIC2_MC_U_FIXED_CTRL) ||
-	        (reg == PCI_MIC2_MC_D_CTR0_A) ||
-		(reg == PCI_MIC2_MC_D_CTR0_B) ||
-	        (reg == PCI_MIC2_MC_D_CTR1_A) ||
-		(reg == PCI_MIC2_MC_D_CTR1_B) ||
-	        (reg == PCI_MIC2_MC_D_CTR2_A) ||
-		(reg == PCI_MIC2_MC_D_CTR2_B) ||
-	        (reg == PCI_MIC2_MC_D_CTR3_A) ||
-		(reg == PCI_MIC2_MC_D_CTR3_B) ||
-		(reg == PCI_MIC2_MC_D_CTRL0) ||
-		(reg == PCI_MIC2_MC_D_CTRL1) ||
-		(reg == PCI_MIC2_MC_D_CTRL2) ||
-		(reg == PCI_MIC2_MC_D_CTRL3) ||
-		(reg == PCI_MIC2_MC_D_BOX_CTRL) ||
-		(reg == PCI_MIC2_MC_D_BOX_STATUS) ||
-		(reg == PCI_MIC2_MC_D_FIXED_CTR_A) ||
-		(reg == PCI_MIC2_MC_D_FIXED_CTR_B) ||
-		(reg == PCI_MIC2_MC_D_FIXED_CTRL))
-	    {
-		return 1;
-	    }
-	    break;
-	case R2PCIE:
-	    if ((reg == PCI_MIC2_M2PCIE_CTR0_A) ||
-		(reg == PCI_MIC2_M2PCIE_CTR0_B) ||
-		(reg == PCI_MIC2_M2PCIE_CTR1_A) ||
+    case EDC:
+        if ((reg == PCI_MIC2_EDC_U_CTR0_A) ||
+        (reg == PCI_MIC2_EDC_U_CTR0_B) ||
+            (reg == PCI_MIC2_EDC_U_CTR1_A) ||
+        (reg == PCI_MIC2_EDC_U_CTR1_B) ||
+            (reg == PCI_MIC2_EDC_U_CTR2_A) ||
+        (reg == PCI_MIC2_EDC_U_CTR2_B) ||
+            (reg == PCI_MIC2_EDC_U_CTR3_A) ||
+        (reg == PCI_MIC2_EDC_U_CTR3_B) ||
+        (reg == PCI_MIC2_EDC_U_CTRL0) ||
+        (reg == PCI_MIC2_EDC_U_CTRL1) ||
+        (reg == PCI_MIC2_EDC_U_CTRL2) ||
+        (reg == PCI_MIC2_EDC_U_CTRL3) ||
+        (reg == PCI_MIC2_EDC_U_BOX_CTRL) ||
+        (reg == PCI_MIC2_EDC_U_BOX_STATUS) ||
+        (reg == PCI_MIC2_EDC_U_FIXED_CTR_A) ||
+        (reg == PCI_MIC2_EDC_U_FIXED_CTR_B) ||
+        (reg == PCI_MIC2_EDC_U_FIXED_CTRL) ||
+            (reg == PCI_MIC2_EDC_D_CTR0_A) ||
+        (reg == PCI_MIC2_EDC_D_CTR0_B) ||
+            (reg == PCI_MIC2_EDC_D_CTR1_A) ||
+        (reg == PCI_MIC2_EDC_D_CTR1_B) ||
+            (reg == PCI_MIC2_EDC_D_CTR2_A) ||
+        (reg == PCI_MIC2_EDC_D_CTR2_B) ||
+            (reg == PCI_MIC2_EDC_D_CTR3_A) ||
+        (reg == PCI_MIC2_EDC_D_CTR3_B) ||
+        (reg == PCI_MIC2_EDC_D_CTRL0) ||
+        (reg == PCI_MIC2_EDC_D_CTRL1) ||
+        (reg == PCI_MIC2_EDC_D_CTRL2) ||
+        (reg == PCI_MIC2_EDC_D_CTRL3) ||
+        (reg == PCI_MIC2_EDC_D_BOX_CTRL) ||
+        (reg == PCI_MIC2_EDC_D_BOX_STATUS) ||
+        (reg == PCI_MIC2_EDC_D_FIXED_CTR_A) ||
+        (reg == PCI_MIC2_EDC_D_FIXED_CTR_B) ||
+        (reg == PCI_MIC2_EDC_D_FIXED_CTRL))
+        {
+        return 1;
+        }
+        break;
+    case IMC:
+        if ((reg == PCI_MIC2_MC_U_CTR0_A) ||
+        (reg == PCI_MIC2_MC_U_CTR0_B) ||
+            (reg == PCI_MIC2_MC_U_CTR1_A) ||
+        (reg == PCI_MIC2_MC_U_CTR1_B) ||
+            (reg == PCI_MIC2_MC_U_CTR2_A) ||
+        (reg == PCI_MIC2_MC_U_CTR2_B) ||
+            (reg == PCI_MIC2_MC_U_CTR3_A) ||
+        (reg == PCI_MIC2_MC_U_CTR3_B) ||
+        (reg == PCI_MIC2_MC_U_CTRL0) ||
+        (reg == PCI_MIC2_MC_U_CTRL1) ||
+        (reg == PCI_MIC2_MC_U_CTRL2) ||
+        (reg == PCI_MIC2_MC_U_CTRL3) ||
+        (reg == PCI_MIC2_MC_U_BOX_CTRL) ||
+        (reg == PCI_MIC2_MC_U_BOX_STATUS) ||
+        (reg == PCI_MIC2_MC_U_FIXED_CTR_A) ||
+        (reg == PCI_MIC2_MC_U_FIXED_CTR_B) ||
+        (reg == PCI_MIC2_MC_U_FIXED_CTRL) ||
+            (reg == PCI_MIC2_MC_D_CTR0_A) ||
+        (reg == PCI_MIC2_MC_D_CTR0_B) ||
+            (reg == PCI_MIC2_MC_D_CTR1_A) ||
+        (reg == PCI_MIC2_MC_D_CTR1_B) ||
+            (reg == PCI_MIC2_MC_D_CTR2_A) ||
+        (reg == PCI_MIC2_MC_D_CTR2_B) ||
+            (reg == PCI_MIC2_MC_D_CTR3_A) ||
+        (reg == PCI_MIC2_MC_D_CTR3_B) ||
+        (reg == PCI_MIC2_MC_D_CTRL0) ||
+        (reg == PCI_MIC2_MC_D_CTRL1) ||
+        (reg == PCI_MIC2_MC_D_CTRL2) ||
+        (reg == PCI_MIC2_MC_D_CTRL3) ||
+        (reg == PCI_MIC2_MC_D_BOX_CTRL) ||
+        (reg == PCI_MIC2_MC_D_BOX_STATUS) ||
+        (reg == PCI_MIC2_MC_D_FIXED_CTR_A) ||
+        (reg == PCI_MIC2_MC_D_FIXED_CTR_B) ||
+        (reg == PCI_MIC2_MC_D_FIXED_CTRL))
+        {
+        return 1;
+        }
+        break;
+    case R2PCIE:
+        if ((reg == PCI_MIC2_M2PCIE_CTR0_A) ||
+        (reg == PCI_MIC2_M2PCIE_CTR0_B) ||
+        (reg == PCI_MIC2_M2PCIE_CTR1_A) ||
                 (reg == PCI_MIC2_M2PCIE_CTR1_B) ||
-		(reg == PCI_MIC2_M2PCIE_CTR2_A) ||
+        (reg == PCI_MIC2_M2PCIE_CTR2_A) ||
                 (reg == PCI_MIC2_M2PCIE_CTR2_B) ||
-		(reg == PCI_MIC2_M2PCIE_CTR3_A) ||
+        (reg == PCI_MIC2_M2PCIE_CTR3_A) ||
                 (reg == PCI_MIC2_M2PCIE_CTR3_B) ||
-		(reg == PCI_MIC2_M2PCIE_CTRL0) ||
-		(reg == PCI_MIC2_M2PCIE_CTRL1) ||
-		(reg == PCI_MIC2_M2PCIE_CTRL2) ||
-		(reg == PCI_MIC2_M2PCIE_CTRL3) ||
-		(reg == PCI_MIC2_M2PCIE_BOX_CTRL) ||
-		(reg == PCI_MIC2_M2PCIE_BOX_STATUS))
-	    {
-		return 1;
-	    }
-	    break;
-	case IRP:
-	    if ((reg == PCI_MIC2_IRP_CTR0) ||
-		(reg == PCI_MIC2_IRP_CTR1) ||
-		(reg == PCI_MIC2_IRP_CTRL0) ||
-		(reg == PCI_MIC2_IRP_CTRL1) ||
-		(reg == PCI_MIC2_IRP_BOX_CTRL) ||
-		(reg == PCI_MIC2_IRP_BOX_STATUS))
-	    {
-		return 1;
-	    }
-	    break;
-	default:
-	    break;
+        (reg == PCI_MIC2_M2PCIE_CTRL0) ||
+        (reg == PCI_MIC2_M2PCIE_CTRL1) ||
+        (reg == PCI_MIC2_M2PCIE_CTRL2) ||
+        (reg == PCI_MIC2_M2PCIE_CTRL3) ||
+        (reg == PCI_MIC2_M2PCIE_BOX_CTRL) ||
+        (reg == PCI_MIC2_M2PCIE_BOX_STATUS))
+        {
+        return 1;
+        }
+        break;
+    case IRP:
+        if ((reg == PCI_MIC2_IRP_CTR0) ||
+        (reg == PCI_MIC2_IRP_CTR1) ||
+        (reg == PCI_MIC2_IRP_CTRL0) ||
+        (reg == PCI_MIC2_IRP_CTRL1) ||
+        (reg == PCI_MIC2_IRP_BOX_CTRL) ||
+        (reg == PCI_MIC2_IRP_BOX_STATUS))
+        {
+        return 1;
+        }
+        break;
+    default:
+        break;
 
     }
     return 0;
@@ -1015,33 +1021,17 @@ daemonize(int* parentPid)
     }
 }
 
-/* #####  MAIN FUNCTION DEFINITION   ################## */
-
-int main(void)
+int serviceClient(int connfd)
 {
     int ret;
-    pid_t pid;
-    struct sockaddr_un  addr1;
-    socklen_t socklen;
-    AccessDataRecord dRecord;
-    mode_t oldumask;
     uint32_t numHWThreads = sysconf(_SC_NPROCESSORS_CONF);
     uint32_t model;
+    AccessDataRecord dRecord;
+
     for (int i=0;i<MAX_NUM_THREADS;i++)
     {
         FD_MSR[i] = -1;
     }
-
-    openlog(ident, 0, LOG_USER);
-
-    if (!lock_check())
-    {
-        syslog(LOG_ERR,"Access to performance counters is locked.\n");
-        stop_daemon();
-    }
-
-    daemonize(&pid);
-    syslog(LOG_INFO, "AccessDaemon runs with UID %d, eUID %d\n", getuid(), geteuid());
 
     {
         uint32_t  eax = 0x00;
@@ -1139,64 +1129,6 @@ int main(void)
                 exit(EXIT_FAILURE);
         }
     }
-
-    /* setup filename for socket */
-    filepath = (char*) calloc(sizeof(addr1.sun_path), 1);
-    snprintf(filepath, sizeof(addr1.sun_path), TOSTRING(LIKWIDSOCKETBASE) "-%d", pid);
-
-    /* get a socket */
-    LOG_AND_EXIT_IF_ERROR(sockfd = socket(AF_LOCAL, SOCK_STREAM, 0), socket failed);
-
-    /* initialize socket data structure */
-    bzero(&addr1, sizeof(addr1));
-    addr1.sun_family = AF_LOCAL;
-    strncpy(addr1.sun_path, filepath, (sizeof(addr1.sun_path) - 1)); /* null terminated by the bzero() above! */
-
-    /* Change the file mode mask so only the calling user has access
-     * and switch the user/gid with which the following socket creation runs. */
-    oldumask = umask(077);
-    CHECK_ERROR(setfsuid(getuid()), setfsuid failed);
-
-    /* bind and listen on socket */
-    LOG_AND_EXIT_IF_ERROR(bind(sockfd, (SA*) &addr1, sizeof(addr1)), bind failed);
-    LOG_AND_EXIT_IF_ERROR(listen(sockfd, 1), listen failed);
-    LOG_AND_EXIT_IF_ERROR(chmod(filepath, S_IRUSR|S_IWUSR), chmod failed);
-
-    socklen = sizeof(addr1);
-
-    { /* Init signal handler */
-        struct sigaction sia;
-        sia.sa_handler = Signal_Handler;
-        sigemptyset(&sia.sa_mask);
-        sia.sa_flags = 0;
-        sigaction(SIGALRM, &sia, NULL);
-        sigaction(SIGPIPE, &sia, NULL);
-        sigaction(SIGTERM, &sia, NULL);
-    }
-
-    /* setup an alarm to stop the daemon if there is no connect.*/
-    alarm(15U);
-
-    if ((connfd = accept(sockfd, (SA*) &addr1, &socklen)) < 0)
-    {
-        if (errno == EINTR)
-        {
-            syslog(LOG_ERR, "exiting due to timeout - no client connected after 15 seconds.");
-        }
-        else
-        {
-            syslog(LOG_ERR, "accept() failed:  %s", strerror(errno));
-        }
-        CHECK_ERROR(unlink(filepath), unlink of socket failed);
-        exit(EXIT_FAILURE);
-    }
-
-    alarm(0);
-    CHECK_ERROR(unlink(filepath), unlink of socket failed);
-
-    /* Restore the old umask and fs ids. */
-    (void) umask(oldumask);
-    CHECK_ERROR(setfsuid(geteuid()), setfsuid failed);
 
     {
         char* msr_file_name = (char*) malloc(MAX_PATH_LENGTH * sizeof(char));
@@ -1384,6 +1316,109 @@ LOOP:
 
         LOG_AND_EXIT_IF_ERROR(write(connfd, (void*) &dRecord, sizeof(AccessDataRecord)), write failed);
     }
+
+    /* never reached */
+    return EXIT_SUCCESS;
+}
+
+/* #####  MAIN FUNCTION DEFINITION   ################## */
+
+int main(void)
+{
+    pid_t pid;
+#if 0
+    mode_t oldumask;
+#endif
+    struct sockaddr_un  addr1;
+    socklen_t socklen;
+    sigset_t all;
+    int err;
+    int sigfd;
+
+    openlog(ident, 0, LOG_USER);
+
+    if (!lock_check())
+    {
+        syslog(LOG_ERR,"Access to performance counters is locked.\n");
+        stop_daemon();
+    }
+
+#if 0
+    daemonize(&pid);
+    syslog(LOG_INFO, "AccessDaemon runs with UID %d, eUID %d\n", getuid(), geteuid());
+#endif
+
+    pid = getpid();
+    syslog(LOG_INFO, "AccessDaemon is running with pid %d", pid);
+
+    sigfillset(&all);
+    LOG_AND_EXIT_IF_ERROR(sigprocmask(SIG_BLOCK, &all, NULL), sigprocmask failed);
+
+    LOG_AND_EXIT_IF_ERROR(sigfd = signalfd(-1, &all, 0), signalfd failed);
+
+    /* setup filename for socket */
+    filepath = (char*) calloc(sizeof(addr1.sun_path), 1);
+    snprintf(filepath, sizeof(addr1.sun_path), TOSTRING(LIKWIDSOCKETBASE) "-d");
+
+    /* get a socket */
+    LOG_AND_EXIT_IF_ERROR(sockfd = socket(AF_LOCAL, SOCK_STREAM, 0), socket failed);
+
+    /* initialize socket data structure */
+    bzero(&addr1, sizeof(addr1));
+    addr1.sun_family = AF_LOCAL;
+    strncpy(addr1.sun_path, filepath, (sizeof(addr1.sun_path) - 1)); /* null terminated by the bzero() above! */
+
+    /* bind and listen on socket */
+    LOG_AND_EXIT_IF_ERROR(bind(sockfd, (SA*) &addr1, sizeof(addr1)), bind failed);
+    LOG_AND_EXIT_IF_ERROR(listen(sockfd, 1), listen failed);
+    LOG_AND_EXIT_IF_ERROR(chmod(filepath, S_IROTH|S_IWOTH), chmod failed);
+
+    while (1)
+    {
+        struct pollfd pfs[2];
+        pfs[0].fd     = sigfd;
+        pfs[0].events = POLLIN;
+        pfs[1].fd     = sockfd;
+        pfs[1].events = POLLIN;
+
+        LOG_AND_EXIT_IF_ERROR(poll(pfs, sizeof(pfs)/sizeof(pfs[0]), -1), poll failed);
+
+        if (pfs[0].revents & POLLIN) {
+            struct signalfd_siginfo info;
+
+            err = read(sigfd, &info, sizeof(info));
+            LOG_AND_EXIT_IF_ERROR(err, read failed);
+            LOG_AND_EXIT_IF_ERROR(((int )err - (int )sizeof(info)), short read);
+
+            if ((SIGCHLD == info.ssi_signo)) {
+                syslog(LOG_INFO, "Child with pid %d is gone\n", info.ssi_pid);
+                waitpid(info.ssi_pid, NULL, 0);
+            }
+            if ((SIGINT  == info.ssi_signo) ||
+                (SIGQUIT == info.ssi_signo) ||
+                (SIGTERM == info.ssi_signo)) {
+                /* TODO One might want to cleanup child processes here. In the scenario that I will
+                 *      deploy this code it will be done externally anyway.
+                 */
+                CHECK_ERROR(unlink(filepath), unlink of socket failed);
+                syslog(LOG_INFO, "AccessDaemon terminates");
+                return 0;
+            }
+        }
+
+        if (pfs[1].revents & POLLIN) {
+            socklen = sizeof(addr1);
+            LOG_AND_EXIT_IF_ERROR(connfd = accept(sockfd, (SA*) &addr1, &socklen), accept failed);
+
+           pid = fork();
+           if (0 == pid) {
+               serviceClient(connfd);
+               /* never reached */
+               return EXIT_SUCCESS;
+           }
+           syslog(LOG_INFO, "Child with pid %d is alive\n", pid);
+        }
+   }
 
     /* never reached */
     return EXIT_SUCCESS;

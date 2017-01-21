@@ -109,7 +109,11 @@ default_configuration(void)
     init_config = 1;
     return 0;
 use_hardcoded:
-    ret = sprintf(filename,"%s", TOSTRING(ACCESSDAEMON));
+#if 0
+    ret = sprintf(filename,TOSTRING(ACCESSDAEMON));
+#else
+    ret = sprintf(filename,"/usr/bin/true");
+#endif
     filename[ret] = '\0';
     if (!access(filename, X_OK))
     {
